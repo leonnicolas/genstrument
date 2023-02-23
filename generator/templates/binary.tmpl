@@ -1,0 +1,39 @@
+package {{.Pkg.Name}}
+
+import (
+	{{range .Imports}}"{{.}}"
+	{{end}}
+)
+{{$instrumentedTypeName := .InstrumentedTypeName}}
+{{$typeName := .Name}}
+
+type {{$instrumentedTypeName}} struct {
+	{{$typeName}}
+	cv *prometheus.CounterVec
+}
+
+func New{{.InstrumentedTypeName}}(impl {{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
+	cv := promauto.With(r).NewCounterVec(prometheus.CounterOpts{
+		Name: "{{.MetricName}}",
+		Help: "{{.MetricHelp}}",
+	}, []string{"method", "result"})
+
+	return &{{$instrumentedTypeName}}{
+		{{.Name}}: impl,
+		cv: cv,
+	}
+}
+
+{{range .Methods}}
+{{if .ReturnsError}}
+func (c *{{$instrumentedTypeName}}) {{.Name}}({{.ParamsWithTypes}}) ({{.ResultTypes}}) {
+	{{.ResultsWithoutTypes}} := c.{{$typeName}}.{{.Name}}({{.ParamsWithoutTypes}})
+	if err != nil {
+		c.cv.WithLabelValues("{{.Name}}", "error").Inc()
+		return {{.ResultsWithoutTypes}}
+	}
+	c.cv.WithLabelValues("{{.Name}}", "success").Inc()
+	return {{.ResultsWithoutTypes}}
+}
+{{end}}
+{{end}}

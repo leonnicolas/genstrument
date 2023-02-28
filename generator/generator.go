@@ -86,10 +86,8 @@ func (ii *InstrumentedInterface) Imports() []string {
 		for i := 0; i < l; i++ {
 			v := m.Signature.Results().At(i)
 			_, tn, err := ii.typeName(v.Type())
-			if tn.Pkg() != nil {
-				if err == nil {
-					h[tn.Pkg().Path()] = struct{}{}
-				}
+			if err == nil && tn.Pkg() != nil {
+				h[tn.Pkg().Path()] = struct{}{}
 			}
 		}
 	}

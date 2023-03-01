@@ -40,13 +40,16 @@ func New{{.InstrumentedTypeName}}(impl {{$typeName}}, r prometheus.Registerer) *
 {{if .ReturnsError}}
 func (c *{{$instrumentedTypeName}}) {{.Name}}({{.ParamsWithTypes}}) ({{.ResultTypes}}) {
 	t := time.Now()
+	defer func(){
+		c.hv.WithLabelValues("{{.Name}}").Observe(time.Since(t).Seconds())
+	}()
 	{{.ResultsWithoutTypes}} := c.{{$typeName}}.{{.Name}}({{.ParamsWithoutTypes}})
 	if err != nil {
 		c.cv.WithLabelValues("{{.Name}}", "error").Inc()
 		return {{.ResultsWithoutTypes}}
 	}
 	c.cv.WithLabelValues("{{.Name}}", "success").Inc()
-	c.hv.WithLabelValues("{{.Name}}").Observe(time.Since(t).Seconds())
+
 	return {{.ResultsWithoutTypes}}
 }
 {{end}}

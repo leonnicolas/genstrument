@@ -40,72 +40,90 @@ func NewInstrumentedInterface(impl Interface, r prometheus.Registerer) *Instrume
 
 func (c *InstrumentedInterface) AcceptIOReader(_c0 io.Reader) (int, error) {
 	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("AcceptIOReader").Observe(time.Since(t).Seconds())
+	}()
 	_a0, err := c.Interface.AcceptIOReader(_c0)
 	if err != nil {
 		c.cv.WithLabelValues("AcceptIOReader", "error").Inc()
 		return _a0, err
 	}
 	c.cv.WithLabelValues("AcceptIOReader", "success").Inc()
-	c.hv.WithLabelValues("AcceptIOReader").Observe(time.Since(t).Seconds())
+
 	return _a0, err
 }
 
 func (c *InstrumentedInterface) AccpeptStructFromSubPkg(_c0 *pkg.EmptyStruct) error {
 	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("AccpeptStructFromSubPkg").Observe(time.Since(t).Seconds())
+	}()
 	err := c.Interface.AccpeptStructFromSubPkg(_c0)
 	if err != nil {
 		c.cv.WithLabelValues("AccpeptStructFromSubPkg", "error").Inc()
 		return err
 	}
 	c.cv.WithLabelValues("AccpeptStructFromSubPkg", "success").Inc()
-	c.hv.WithLabelValues("AccpeptStructFromSubPkg").Observe(time.Since(t).Seconds())
+
 	return err
 }
 
 func (c *InstrumentedInterface) ReturnIOReaderAndError() (io.Reader, error) {
 	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("ReturnIOReaderAndError").Observe(time.Since(t).Seconds())
+	}()
 	_a0, err := c.Interface.ReturnIOReaderAndError()
 	if err != nil {
 		c.cv.WithLabelValues("ReturnIOReaderAndError", "error").Inc()
 		return _a0, err
 	}
 	c.cv.WithLabelValues("ReturnIOReaderAndError", "success").Inc()
-	c.hv.WithLabelValues("ReturnIOReaderAndError").Observe(time.Since(t).Seconds())
+
 	return _a0, err
 }
 
 func (c *InstrumentedInterface) ReturnInt() (int, error) {
 	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("ReturnInt").Observe(time.Since(t).Seconds())
+	}()
 	_a0, err := c.Interface.ReturnInt()
 	if err != nil {
 		c.cv.WithLabelValues("ReturnInt", "error").Inc()
 		return _a0, err
 	}
 	c.cv.WithLabelValues("ReturnInt", "success").Inc()
-	c.hv.WithLabelValues("ReturnInt").Observe(time.Since(t).Seconds())
+
 	return _a0, err
 }
 
 func (c *InstrumentedInterface) ReturnStructFromSubPkg() (*pkg.EmptyStruct, error) {
 	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("ReturnStructFromSubPkg").Observe(time.Since(t).Seconds())
+	}()
 	_a0, err := c.Interface.ReturnStructFromSubPkg()
 	if err != nil {
 		c.cv.WithLabelValues("ReturnStructFromSubPkg", "error").Inc()
 		return _a0, err
 	}
 	c.cv.WithLabelValues("ReturnStructFromSubPkg", "success").Inc()
-	c.hv.WithLabelValues("ReturnStructFromSubPkg").Observe(time.Since(t).Seconds())
+
 	return _a0, err
 }
 
 func (c *InstrumentedInterface) Simple() error {
 	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("Simple").Observe(time.Since(t).Seconds())
+	}()
 	err := c.Interface.Simple()
 	if err != nil {
 		c.cv.WithLabelValues("Simple", "error").Inc()
 		return err
 	}
 	c.cv.WithLabelValues("Simple", "success").Inc()
-	c.hv.WithLabelValues("Simple").Observe(time.Since(t).Seconds())
+
 	return err
 }

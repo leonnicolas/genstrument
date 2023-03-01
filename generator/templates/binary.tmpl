@@ -12,29 +12,41 @@ import (
 type {{$instrumentedTypeName}} struct {
 	{{$typeName}}
 	cv *prometheus.CounterVec
+	hv *prometheus.HistogramVec
 }
 
 func New{{.InstrumentedTypeName}}(impl {{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
-	cv := promauto.With(r).NewCounterVec(prometheus.CounterOpts{
-		Name: "{{.MetricName}}",
-		Help: "{{.MetricHelp}}",
-	}, []string{"method", "result"})
+	hv := promauto.With(r).NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "{{.MetricHistName}}",
+			Help:    "{{.MetricHistHelp}}",
+			Buckets: prometheus.DefBuckets,
+		}, []string{"method"})
+
+	cv := promauto.With(r).NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "{{.MetricName}}",
+			Help: "{{.MetricHelp}}",
+		}, []string{"method", "result"})
 
 	return &{{$instrumentedTypeName}}{
 		{{.Name}}: impl,
 		cv: cv,
+		hv: hv,
 	}
 }
 
 {{range .Methods}}
 {{if .ReturnsError}}
 func (c *{{$instrumentedTypeName}}) {{.Name}}({{.ParamsWithTypes}}) ({{.ResultTypes}}) {
+	t := time.Now()
 	{{.ResultsWithoutTypes}} := c.{{$typeName}}.{{.Name}}({{.ParamsWithoutTypes}})
 	if err != nil {
 		c.cv.WithLabelValues("{{.Name}}", "error").Inc()
 		return {{.ResultsWithoutTypes}}
 	}
 	c.cv.WithLabelValues("{{.Name}}", "success").Inc()
+	c.hv.WithLabelValues("{{.Name}}").Observe(time.Since(t).Seconds())
 	return {{.ResultsWithoutTypes}}
 }
 {{end}}

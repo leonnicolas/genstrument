@@ -35,6 +35,14 @@ var root = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		c.MetricHistHelp, err = cmd.PersistentFlags().GetString("metric-hist-help")
+		if err != nil {
+			return err
+		}
+		c.MetricHistName, err = cmd.PersistentFlags().GetString("metric-hist-name")
+		if err != nil {
+			return err
+		}
 
 		// We must save the output file in a buffer to avoid parsing this file when we load the go package.
 		buf := bytes.NewBuffer(nil)
@@ -79,7 +87,11 @@ func init() {
 	root.PersistentFlags().String("metric-help", "", "metric help text")
 	root.MarkPersistentFlagRequired("metric-help")
 
-	root.PersistentFlags().StringP("out", "o", "-", "metric help text")
+	root.PersistentFlags().String("metric-hist-name", "", "name of this histogram")
+
+	root.PersistentFlags().String("metric-hist-help", "", "histogram help text")
+
+	root.PersistentFlags().StringP("out", "o", "-", "where to write the generated file")
 }
 
 func main() {

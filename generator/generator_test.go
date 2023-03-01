@@ -9,6 +9,43 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
+func TestLoad(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	buf := bytes.NewBuffer(nil)
+	c := Config{
+		FilePath:   "../examples/binary/binary.go",
+		Out:        buf,
+		MetricName: "metric_name_total",
+		MetricHelp: "help to the metric",
+		Pattern:    "Interface",
+	}
+	i, err := c.load(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Run("Imports", func(t *testing.T) {
+		i.Imports()
+	})
+	t.Run("Methods", func(t *testing.T) {
+		for _, m := range i.Methods() {
+			t.Run("ParamsWithTypes", func(t *testing.T) {
+				m.ParamsWithTypes()
+			})
+			t.Run("ParamsWithoutTypes", func(t *testing.T) {
+				m.ParamsWithoutTypes()
+			})
+			t.Run("ResultsWithoutTypes", func(t *testing.T) {
+				m.ResultsWithoutTypes()
+			})
+			t.Run("ResultsTypes", func(t *testing.T) {
+				m.ResultTypes()
+			})
+		}
+	})
+}
+
 func TestGenerate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)

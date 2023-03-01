@@ -15,11 +15,13 @@ import (
 )
 
 type Config struct {
-	FilePath   string
-	Pattern    string
-	MetricName string
-	MetricHelp string
-	Out        io.Writer
+	FilePath       string
+	Pattern        string
+	MetricName     string
+	MetricHelp     string
+	MetricHistName string
+	MetricHistHelp string
+	Out            io.Writer
 }
 
 //go:embed templates/*
@@ -44,6 +46,20 @@ func (ii *InstrumentedInterface) MetricName() string {
 
 func (ii *InstrumentedInterface) MetricHelp() string {
 	return ii.c.MetricHelp
+}
+
+func (ii *InstrumentedInterface) MetricHistName() string {
+	if n := ii.c.MetricHistName; n != "" {
+		return n
+	}
+	return fmt.Sprintf("%s_duration_seconds", strings.TrimSuffix(ii.MetricName(), "_total"))
+}
+
+func (ii *InstrumentedInterface) MetricHistHelp() string {
+	if n := ii.c.MetricHistHelp; n != "" {
+		return n
+	}
+	return ii.MetricHelp()
 }
 
 func (ii *InstrumentedInterface) typeName(t types.Type) (string, *types.TypeName, error) {
@@ -231,7 +247,7 @@ func (c *Config) Generate(ctx context.Context) error {
 
 	res, err := imports.Process(c.FilePath, buf.Bytes(), opt)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to process imports: %w", err)
 	}
 
 	buf.Reset()

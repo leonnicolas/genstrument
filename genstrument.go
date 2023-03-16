@@ -19,6 +19,12 @@ var root = &cobra.Command{
 	Long:  "generate code for a provided interface name, that provided an instrumented wrapper around the original interface",
 	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 		c := &generator.Config{}
+		if mode, err := cmd.PersistentFlags().GetString("mode"); err != nil {
+			return err
+		} else {
+			c.Mode = generator.GeneratorMode(mode)
+		}
+
 		c.FilePath, err = cmd.PersistentFlags().GetString("file-path")
 		if err != nil {
 			return err
@@ -81,17 +87,17 @@ func init() {
 	root.PersistentFlags().StringP("file-path", "f", "", "path of the go file that contains the interface to be instrumented")
 	root.MarkPersistentFlagRequired("file-path")
 
-	root.PersistentFlags().String("metric-name", "", "metric name")
-	root.MarkPersistentFlagRequired("metric-name")
+	root.PersistentFlags().String("metric-name", "metric", "metric name")
 
-	root.PersistentFlags().String("metric-help", "", "metric help text")
-	root.MarkPersistentFlagRequired("metric-help")
+	root.PersistentFlags().String("metric-help", "the metric", "metric help text")
 
 	root.PersistentFlags().String("metric-hist-name", "", "name of this histogram")
 
 	root.PersistentFlags().String("metric-hist-help", "", "histogram help text")
 
 	root.PersistentFlags().StringP("out", "o", "-", "where to write the generated file")
+
+	root.PersistentFlags().StringP("mode", "m", "binary", "where to write the generated file")
 }
 
 func main() {

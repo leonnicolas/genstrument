@@ -1,0 +1,25 @@
+{{template "head.tmpl" .}}
+
+{{$instrumentedTypeName := .InstrumentedTypeName}}
+{{$typeName := .Name}}
+
+type {{$instrumentedTypeName}} struct {
+	{{$typeName}}
+	signalhttp.HandlerInstrumenter
+}
+
+func New{{.InstrumentedTypeName}}(impl {{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
+	i := signalhttp.NewHandlerInstrumenter(r, []string{"handler"})
+	return &{{$instrumentedTypeName}}{impl, i}
+}
+
+{{range .Methods}}
+{{if .IsHandler}}
+func (i *{{$instrumentedTypeName}}) {{.Name}}(w http.ResponseWriter, r *http.Request, {{.ParamsWithTypes}}) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		i.{{$typeName}}.{{.Name}}(w, r, {{.ParamsWithoutTypes}})
+	}
+	i.NewHandler(prometheus.Labels{"handler": "{{.Name}}"}, http.HandlerFunc(handler))(w, r)
+}
+{{end}}
+{{end}}

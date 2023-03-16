@@ -3,6 +3,7 @@ module github.com/leonnicolas/genstrument
 go 1.20
 
 require (
+	github.com/metalmatze/signal v0.0.0-20210307161603-1c9aa721a97a
 	github.com/oklog/run v1.1.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sergi/go-diff v1.3.1

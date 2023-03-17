@@ -4,8 +4,14 @@ Generate code to instrument an interface.
 
 ## Supported Interfaces
 
-At the moment only methods of interfaces can be instrumented that return an error as the last return value.
+### Binary
+
+An interface with methods that return an error as the last return value.
 Depending if the error is nil, the corresponding counter vector will be increased.
+
+### Handler
+
+An interface with methods that have no return values, the first argument is an `http.ResponseWriter` and the second argument is an `*http.Request`.
 
 ## Install
 

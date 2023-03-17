@@ -46,7 +46,7 @@ func TestLoad(t *testing.T) {
 	})
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateBinary(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -57,6 +57,7 @@ func TestGenerate(t *testing.T) {
 		MetricName: "metric_name_total",
 		MetricHelp: "help to the metric",
 		Pattern:    "Interface",
+		Mode:       Binary,
 	}
 
 	err := c.Generate(ctx)
@@ -65,6 +66,38 @@ func TestGenerate(t *testing.T) {
 	}
 
 	f, err := os.ReadFile("../examples/binary/gen.go")
+	if err != nil {
+		t.Error(err)
+	}
+
+	dmp := diffmatchpatch.New()
+
+	diffs := dmp.DiffMain(string(f), string(buf.Bytes()), false)
+	if !bytes.Equal(f, buf.Bytes()) {
+		if len(diffs) > 0 {
+			t.Error(dmp.DiffPrettyText(diffs))
+		}
+	}
+}
+
+func TestGenerateHandler(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	buf := bytes.NewBuffer(nil)
+	c := Config{
+		FilePath: "../examples/http-handler/http-handler.go",
+		Out:      buf,
+		Pattern:  "Server",
+		Mode:     Handler,
+	}
+
+	err := c.Generate(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	f, err := os.ReadFile("../examples/http-handler/gen.go")
 	if err != nil {
 		t.Error(err)
 	}

@@ -14,6 +14,18 @@ import (
 	"golang.org/x/tools/imports"
 )
 
+type GeneratorMode string
+
+const (
+	Binary  GeneratorMode = "binary"
+	Handler GeneratorMode = "handler"
+)
+
+var mode2tmpl = map[GeneratorMode]string{
+	Binary:  "binary.tmpl",
+	Handler: "handler.tmpl",
+}
+
 type Config struct {
 	FilePath       string
 	Pattern        string
@@ -22,6 +34,7 @@ type Config struct {
 	MetricHistName string
 	MetricHistHelp string
 	Out            io.Writer
+	Mode           GeneratorMode
 }
 
 //go:embed templates/*
@@ -139,6 +152,10 @@ func (m *Method) ParamsWithTypes() (str string) {
 		}
 		strs[i] = fmt.Sprintf("_c%d %s", i, fmt.Sprintf("%s%s.%s", s, tn.Pkg().Name(), tn.Name()))
 	}
+
+	if m.parentInterface.c.Mode == Handler {
+		strs = strs[2:]
+	}
 	return strings.Join(strs, ",")
 }
 
@@ -148,6 +165,9 @@ func (m *Method) ParamsWithoutTypes() (str string) {
 
 	for i := 0; i < l; i++ {
 		strs[i] = fmt.Sprintf("_c%d", i)
+	}
+	if m.parentInterface.c.Mode == Handler {
+		strs = strs[2:]
 	}
 	return strings.Join(strs, ",")
 }
@@ -205,6 +225,21 @@ func (m *Method) ReturnsError() bool {
 	return r.At(m.Signature.Results().Len()-1).Type().String() == "error"
 }
 
+func (m *Method) IsHandler() bool {
+	r := m.Signature.Results()
+	if r != nil && r.Len() > 0 {
+		return false
+	}
+	p := m.Signature.Params()
+	if p == nil {
+		return false
+	}
+	if l := p.Len(); l < 2 {
+		return false
+	}
+	return p.At(0).Type().String() == "net/http.ResponseWriter" && p.At(1).Type().String() == "*net/http.Request"
+}
+
 func (c *Config) load(ctx context.Context) (*InstrumentedInterface, error) {
 	p := pkg.NewParser(nil)
 	if err := p.Parse(ctx, c.FilePath); err != nil {
@@ -230,6 +265,9 @@ func (c *Config) load(ctx context.Context) (*InstrumentedInterface, error) {
 // unless NeedDeps and NeedImports are also set.
 
 func (c *Config) Generate(ctx context.Context) error {
+	if _, ok := mode2tmpl[c.Mode]; !ok {
+		return fmt.Errorf("unsopperted generator mode: %s", c.Mode)
+	}
 	iiface, err := c.load(ctx)
 	if err != nil {
 		return err
@@ -240,7 +278,7 @@ func (c *Config) Generate(ctx context.Context) error {
 		return fmt.Errorf("failed to load template: %w", err)
 	}
 	buf := bytes.NewBuffer(nil)
-	if err := tmpl.Execute(buf, iiface); err != nil {
+	if err := tmpl.ExecuteTemplate(buf, mode2tmpl[c.Mode], iiface); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 	opt := &imports.Options{Comments: true}

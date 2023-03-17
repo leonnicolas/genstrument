@@ -1,11 +1,5 @@
-// This code in auto generated. DO NOT EDIT.
+{{template "head.tmpl" .}}
 
-package {{.Pkg.Name}}
-
-import (
-	{{range .Imports}}"{{.}}"
-	{{end}}
-)
 {{$instrumentedTypeName := .InstrumentedTypeName}}
 {{$typeName := .Name}}
 

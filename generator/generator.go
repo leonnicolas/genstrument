@@ -98,7 +98,12 @@ func (ii *InstrumentedInterface) typeName(t types.Type) (string, *types.TypeName
 func (ii *InstrumentedInterface) Imports() []string {
 	h := make(map[string]struct{})
 	h["github.com/prometheus/client_golang/prometheus"] = struct{}{}
-	h["github.com/prometheus/client_golang/prometheus/promauto"] = struct{}{}
+	switch ii.c.Mode {
+	case Binary:
+		h["github.com/prometheus/client_golang/prometheus/promauto"] = struct{}{}
+	case Handler:
+		h["github.com/metalmatze/signal/server/signalhttp"] = struct{}{}
+	}
 
 	for _, m := range ii.Methods() {
 		l := m.Signature.Params().Len()

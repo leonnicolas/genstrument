@@ -49,6 +49,10 @@ var root = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		c.Package, err = cmd.PersistentFlags().GetString("package")
+		if err != nil {
+			return err
+		}
 
 		// We must save the output file in a buffer to avoid parsing this file when we load the go package.
 		buf := bytes.NewBuffer(nil)
@@ -98,6 +102,8 @@ func init() {
 	root.PersistentFlags().StringP("out", "o", "-", "where to write the generated file")
 
 	root.PersistentFlags().StringP("mode", "m", "binary", "where to write the generated file")
+
+	root.PersistentFlags().String("package", "", "for what package to generate the code for")
 }
 
 func main() {

@@ -19,11 +19,15 @@ type GeneratorMode string
 const (
 	Binary  GeneratorMode = "binary"
 	Handler GeneratorMode = "handler"
+	// https://github.com/deepmap/oapi-codegen can be used to generate http clients.
+	// This this generator mode they can be instrumented quickly.
+	OapiCodeGenClient GeneratorMode = "oapi-codegen-client"
 )
 
 var mode2tmpl = map[GeneratorMode]string{
-	Binary:  "binary.tmpl",
-	Handler: "handler.tmpl",
+	Binary:            "binary.tmpl",
+	Handler:           "handler.tmpl",
+	OapiCodeGenClient: "oapi_codegen_client.tmpl",
 }
 
 type Config struct {
@@ -35,6 +39,8 @@ type Config struct {
 	MetricHistHelp string
 	Out            io.Writer
 	Mode           GeneratorMode
+	// Package defines the packege for which this code should be generated
+	Package string
 }
 
 //go:embed templates/*
@@ -44,6 +50,13 @@ type InstrumentedInterface struct {
 	*pkg.Interface
 	InstrumentedTypeName string
 	c                    *Config
+}
+
+func (ii *InstrumentedInterface) Package() string {
+	if ii.c.Package != "" {
+		return ii.c.Package
+	}
+	return ii.Pkg.Name()
 }
 
 func (ii *InstrumentedInterface) Methods() (methods []*Method) {
@@ -99,7 +112,7 @@ func (ii *InstrumentedInterface) Imports() []string {
 	h := make(map[string]struct{})
 	h["github.com/prometheus/client_golang/prometheus"] = struct{}{}
 	switch ii.c.Mode {
-	case Binary:
+	case Binary, OapiCodeGenClient:
 		h["github.com/prometheus/client_golang/prometheus/promauto"] = struct{}{}
 	case Handler:
 		h["github.com/metalmatze/signal/server/signalhttp"] = struct{}{}
@@ -126,7 +139,9 @@ func (ii *InstrumentedInterface) Imports() []string {
 		}
 	}
 
-	delete(h, ii.Pkg.Path())
+	if ii.c.Package == "" {
+		delete(h, ii.Pkg.Path())
+	}
 
 	s := make([]string, 0, len(h))
 	for k := range h {
@@ -134,6 +149,21 @@ func (ii *InstrumentedInterface) Imports() []string {
 	}
 
 	return s
+}
+
+func (ii *InstrumentedInterface) PackagePrefix() string {
+	if ii.c.Package == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s.", ii.Pkg.Name())
+}
+
+func (ii *InstrumentedInterface) PrintTypeName(t *types.TypeName) string {
+	return t.Name()
+}
+
+func (ii *InstrumentedInterface) PrintType(t types.Type) string {
+	return t.String()
 }
 
 type Method struct {
@@ -146,16 +176,32 @@ func (m *Method) ParamsWithTypes() (str string) {
 	strs := make([]string, l)
 
 	for i := 0; i < l; i++ {
+		// In case the signature has a last param like p ...type, just using type.String() does not work as it will print []type and not ...type
+		// TODO: I am sure, this if block can have less code duplication.
+		if i+1 == l && m.Signature.Variadic() {
+			s, tn, err := m.parentInterface.typeName(m.Signature.Params().At(i).Type())
+			if err != nil {
+				strs[i] = fmt.Sprintf("_c%d ...%s", i, strings.TrimPrefix(m.parentInterface.PrintType(m.Signature.Params().At(i).Type()), "[]"))
+				continue
+			}
+			if tn.Pkg().Name() == m.parentInterface.Pkg.Name() && m.parentInterface.c.Package == "" {
+				strs[i] = fmt.Sprintf("_c%d ...%s", i, strings.TrimPrefix(fmt.Sprintf("%s%s", s, m.parentInterface.PrintTypeName(tn)), "[]"))
+				continue
+			}
+			strs[i] = fmt.Sprintf("_c%d ...%s", i, strings.TrimPrefix(fmt.Sprintf("%s%s.%s", s, tn.Pkg().Name(), m.parentInterface.PrintTypeName(tn)), "[]"))
+			continue
+
+		}
 		s, tn, err := m.parentInterface.typeName(m.Signature.Params().At(i).Type())
 		if err != nil {
-			strs[i] = fmt.Sprintf("_c%d %s", i, m.Signature.Params().At(i).Type().String())
+			strs[i] = fmt.Sprintf("_c%d %s", i, m.parentInterface.PrintType(m.Signature.Params().At(i).Type()))
 			continue
 		}
-		if tn.Pkg().Name() == m.parentInterface.Pkg.Name() {
-			strs[i] = fmt.Sprintf("_c%d %s", i, fmt.Sprintf("%s%s", s, tn.Name()))
+		if tn.Pkg().Name() == m.parentInterface.Pkg.Name() && m.parentInterface.c.Package == "" {
+			strs[i] = fmt.Sprintf("_c%d %s", i, fmt.Sprintf("%s%s", s, m.parentInterface.PrintTypeName(tn)))
 			continue
 		}
-		strs[i] = fmt.Sprintf("_c%d %s", i, fmt.Sprintf("%s%s.%s", s, tn.Pkg().Name(), tn.Name()))
+		strs[i] = fmt.Sprintf("_c%d %s", i, fmt.Sprintf("%s%s.%s", s, tn.Pkg().Name(), m.parentInterface.PrintTypeName(tn)))
 	}
 
 	if m.parentInterface.c.Mode == Handler {
@@ -169,6 +215,10 @@ func (m *Method) ParamsWithoutTypes() (str string) {
 	strs := make([]string, l)
 
 	for i := 0; i < l; i++ {
+		if i+1 == l && m.Signature.Variadic() {
+			strs[i] = fmt.Sprintf("_c%d...", i)
+			continue
+		}
 		strs[i] = fmt.Sprintf("_c%d", i)
 	}
 	if m.parentInterface.c.Mode == Handler {
@@ -213,7 +263,7 @@ func (m *Method) ResultTypes() (str string) {
 			strs[i] = fmt.Sprintf("%s%s", s, tn.Name())
 			continue
 		}
-		if tn.Pkg().Name() == m.parentInterface.Pkg.Name() {
+		if tn.Pkg().Name() == m.parentInterface.Pkg.Name() && m.parentInterface.c.Package == "" {
 			strs[i] = fmt.Sprintf("%s%s", s, tn.Name())
 			continue
 		}

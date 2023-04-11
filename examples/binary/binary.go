@@ -15,4 +15,7 @@ type Interface interface {
 	ReturnIOReaderAndError() (io.Reader, error)
 	ReturnStructFromSubPkg() (*pkg.EmptyStruct, error)
 	AccpeptStructFromSubPkg(*pkg.EmptyStruct) error
+	AccpeptVariadic(...int) error
+	AccpeptVariadicStructFromSubPkg(*pkg.EmptyStruct, ...*pkg.EmptyStruct) error
+	AccpeptVariadicStdLib(...io.Reader) error
 }

@@ -68,6 +68,51 @@ func (c *InstrumentedInterface) AccpeptStructFromSubPkg(_c0 *pkg.EmptyStruct) er
 	return err
 }
 
+func (c *InstrumentedInterface) AccpeptVariadic(_c0 ...int) error {
+	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("AccpeptVariadic").Observe(time.Since(t).Seconds())
+	}()
+	err := c.Interface.AccpeptVariadic(_c0...)
+	if err != nil {
+		c.cv.WithLabelValues("AccpeptVariadic", "error").Inc()
+		return err
+	}
+	c.cv.WithLabelValues("AccpeptVariadic", "success").Inc()
+
+	return err
+}
+
+func (c *InstrumentedInterface) AccpeptVariadicStdLib(_c0 ...io.Reader) error {
+	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("AccpeptVariadicStdLib").Observe(time.Since(t).Seconds())
+	}()
+	err := c.Interface.AccpeptVariadicStdLib(_c0...)
+	if err != nil {
+		c.cv.WithLabelValues("AccpeptVariadicStdLib", "error").Inc()
+		return err
+	}
+	c.cv.WithLabelValues("AccpeptVariadicStdLib", "success").Inc()
+
+	return err
+}
+
+func (c *InstrumentedInterface) AccpeptVariadicStructFromSubPkg(_c0 *pkg.EmptyStruct, _c1 ...*pkg.EmptyStruct) error {
+	t := time.Now()
+	defer func() {
+		c.hv.WithLabelValues("AccpeptVariadicStructFromSubPkg").Observe(time.Since(t).Seconds())
+	}()
+	err := c.Interface.AccpeptVariadicStructFromSubPkg(_c0, _c1...)
+	if err != nil {
+		c.cv.WithLabelValues("AccpeptVariadicStructFromSubPkg", "error").Inc()
+		return err
+	}
+	c.cv.WithLabelValues("AccpeptVariadicStructFromSubPkg", "success").Inc()
+
+	return err
+}
+
 func (c *InstrumentedInterface) ReturnIOReaderAndError() (io.Reader, error) {
 	t := time.Now()
 	defer func() {

@@ -2,14 +2,15 @@
 
 {{$instrumentedTypeName := .InstrumentedTypeName}}
 {{$typeName := .Name}}
+{{$packagePrefix := .PackagePrefix}}
 
 type {{$instrumentedTypeName}} struct {
-	{{$typeName}}
+	{{$packagePrefix}}{{$typeName}}
 	cv *prometheus.CounterVec
 	hv *prometheus.HistogramVec
 }
 
-func New{{.InstrumentedTypeName}}(impl {{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
+func New{{.InstrumentedTypeName}}(impl {{$packagePrefix}}{{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
 	hv := promauto.With(r).NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "{{.MetricHistName}}",

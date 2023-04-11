@@ -2,13 +2,14 @@
 
 {{$instrumentedTypeName := .InstrumentedTypeName}}
 {{$typeName := .Name}}
+{{$packagePrefix := .PackagePrefix}}
 
 type {{$instrumentedTypeName}} struct {
-	{{$typeName}}
+	{{$packagePrefix}}{{$typeName}}
 	signalhttp.HandlerInstrumenter
 }
 
-func New{{.InstrumentedTypeName}}(impl {{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
+func New{{.InstrumentedTypeName}}(impl {{$packagePrefix}}{{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
 	i := signalhttp.NewHandlerInstrumenter(r, []string{"handler"})
 	return &{{$instrumentedTypeName}}{impl, i}
 }

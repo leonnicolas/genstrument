@@ -1,0 +1,7 @@
+package: oapicodegenclient
+generate:
+  client: true
+  models: true
+output: oapi.go
+output-options:
+  skip-prune: true

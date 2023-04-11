@@ -1,0 +1,48 @@
+{{template "head.tmpl" .}}
+
+{{$instrumentedTypeName := .InstrumentedTypeName}}
+{{$typeName := .Name}}
+{{$packagePrefix := .PackagePrefix}}
+
+type {{$instrumentedTypeName}} struct {
+	{{$packagePrefix}}{{$typeName}}
+	cv *prometheus.CounterVec
+	hv *prometheus.HistogramVec
+}
+
+func New{{.InstrumentedTypeName}}(impl {{$packagePrefix}}{{$typeName}}, r prometheus.Registerer) *{{$instrumentedTypeName}} {
+	hv := promauto.With(r).NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "{{.MetricHistName}}",
+			Help:    "{{.MetricHistHelp}}",
+			Buckets: prometheus.DefBuckets,
+		}, []string{"method"})
+
+	cv := promauto.With(r).NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "{{.MetricName}}",
+			Help: "{{.MetricHelp}}",
+		}, []string{"method", "code"})
+
+	return &{{$instrumentedTypeName}}{
+		{{.Name}}: impl,
+		cv: cv,
+		hv: hv,
+	}
+}
+
+{{range .Methods}}
+func (c *{{$instrumentedTypeName}}) {{.Name}}({{.ParamsWithTypes}}) ({{.ResultTypes}}) {
+	t := time.Now()
+	defer func(){
+		c.hv.WithLabelValues("{{.Name}}").Observe(time.Since(t).Seconds())
+	}()
+	res, err := c.{{$typeName}}.{{.Name}}({{.ParamsWithoutTypes}})
+	if err != nil {
+		return res, err
+	}
+	c.cv.WithLabelValues("{{.Name}}", fmt.Sprint(res.StatusCode())).Inc()
+
+	return res, err
+}
+{{end}}

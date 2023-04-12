@@ -242,6 +242,22 @@ func (m *Method) ResultsWithoutTypes() (str string) {
 	return strings.Join(strs, ",")
 }
 
+func (m *Method) ReturnsHTTPResponse() bool {
+	if m.Signature == nil {
+		return false
+	}
+	r := m.Signature.Results()
+	if r == nil {
+		return false
+	}
+	l := r.Len()
+	if l < 1 {
+		return false
+	}
+	v := r.At(0)
+	return v.Type().String() == "*net/http.Response"
+}
+
 func (m *Method) ResultTypes() (str string) {
 	if m.Signature == nil {
 		return ""

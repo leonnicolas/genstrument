@@ -27,7 +27,7 @@ const (
 var mode2tmpl = map[GeneratorMode]string{
 	Binary:            "binary.tmpl",
 	Handler:           "handler.tmpl",
-	OapiCodeGenClient: "oapi_codegen_client.tmpl",
+	OapiCodeGenClient: "oapi-codegen-client.tmpl",
 }
 
 type Config struct {

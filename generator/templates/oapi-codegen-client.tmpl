@@ -41,7 +41,7 @@ func (c *{{$instrumentedTypeName}}) {{.Name}}({{.ParamsWithTypes}}) ({{.ResultTy
 	if err != nil {
 		return res, err
 	}
-	c.cv.WithLabelValues("{{.Name}}", fmt.Sprint(res.StatusCode())).Inc()
+	c.cv.WithLabelValues("{{.Name}}", fmt.Sprint(res.StatusCode{{if not .ReturnsHTTPResponse}}(){{end}})).Inc()
 
 	return res, err
 }

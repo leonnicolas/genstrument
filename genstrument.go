@@ -85,7 +85,7 @@ var root = &cobra.Command{
 }
 
 func init() {
-	root.PersistentFlags().StringP("pattern", "p", "", "pattern of Interface name to match")
+	root.PersistentFlags().StringP("pattern", "p", "", "pattern of interface name to match")
 	root.MarkPersistentFlagRequired("pattern")
 
 	root.PersistentFlags().StringP("file-path", "f", "", "path of the go file that contains the interface to be instrumented")
@@ -101,7 +101,7 @@ func init() {
 
 	root.PersistentFlags().StringP("out", "o", "-", "where to write the generated file")
 
-	root.PersistentFlags().StringP("mode", "m", "binary", "where to write the generated file")
+	root.PersistentFlags().StringP("mode", "m", string(generator.Binary), fmt.Sprintf("generator mode depending on the given interface. Supported modes are %v", generator.SupportedModes))
 
 	root.PersistentFlags().String("package", "", "for what package to generate the code for")
 }
